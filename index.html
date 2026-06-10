@@ -1,0 +1,1577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>驾驶员安全培训平台</title>
+<script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;900&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          navy:  { DEFAULT: '#1E3A8A', light: '#2D4EAF', dark: '#162D6B', pale: '#EFF6FF' },
+          amber: { DEFAULT: '#F59E0B', light: '#FCD34D', pale: '#FFFBEB' },
+          emerald:{ DEFAULT: '#10B981', pale: '#ECFDF5' },
+          rose:  { DEFAULT: '#EF4444', pale: '#FEF2F2' },
+          slate: { 50: '#F8FAFC', 100: '#F1F5F9', 200: '#E2E8F0', 300: '#CBD5E1', 400: '#94A3B8', 500: '#64748B', 600: '#475569', 700: '#334155', 800: '#1E293B', 900: '#0F172A' }
+        },
+        fontFamily: {
+          sans: ['"Noto Sans SC"', 'PingFang SC', 'sans-serif'],
+          mono: ['"DM Mono"', 'monospace'],
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+  /* ===== 全局基础 ===== */
+  * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+  body { font-family: 'Noto Sans SC', 'PingFang SC', sans-serif; background: #F1F5F9; margin: 0; padding: 0; overflow-x: hidden; }
+
+  /* ===== 移动端容器 ===== */
+  .phone-wrap { max-width: 375px; margin: 0 auto; position: relative; min-height: 100vh; background: #F1F5F9; overflow: hidden; }
+
+  /* 屏幕切换 */
+  .screen { display: none; flex-direction: column; min-height: 100vh; padding-bottom: env(safe-area-inset-bottom, 16px); }
+  .screen.active { display: flex; }
+
+  /* ===== 顶部导航 ===== */
+  .top-nav { position: sticky; top: 0; z-index: 100; background: #1E3A8A; padding: 12px 16px 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 12px rgba(30,58,138,0.3); }
+  .top-nav-title { color: #fff; font-size: 17px; font-weight: 600; letter-spacing: 0.3px; }
+  .top-nav-icon { color: rgba(255,255,255,0.85); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: 8px; transition: background 0.15s; }
+  .top-nav-icon:active { background: rgba(255,255,255,0.15); }
+
+  /* ===== 底部 Tab ===== */
+  .bottom-tab { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 375px; background: #fff; display: flex; border-top: 1px solid #E2E8F0; padding-bottom: env(safe-area-inset-bottom, 8px); z-index: 200; }
+  .tab-item { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 8px 0 4px; gap: 3px; cursor: pointer; transition: all 0.15s; }
+  .tab-item .tab-icon { font-size: 20px; color: #94A3B8; transition: color 0.15s; }
+  .tab-item .tab-label { font-size: 10px; color: #94A3B8; font-weight: 500; transition: color 0.15s; }
+  .tab-item.active .tab-icon, .tab-item.active .tab-label { color: #1E3A8A; }
+  .tab-item:active .tab-icon { transform: scale(0.9); }
+
+  /* ===== 状态徽章 ===== */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .badge-progress { background: #EFF6FF; color: #1E3A8A; }
+  .badge-done     { background: #ECFDF5; color: #059669; }
+  .badge-pending  { background: #F1F5F9; color: #64748B; }
+  .badge-expired  { background: #FEF2F2; color: #DC2626; }
+  .badge-warning  { background: #FFFBEB; color: #D97706; }
+
+  /* ===== 卡片 ===== */
+  .card { background: #fff; border-radius: 16px; box-shadow: 0 1px 8px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04); overflow: hidden; }
+  .card:active { transform: scale(0.99); }
+
+  /* 1px 边框 */
+  .border-hairline { position: relative; }
+  .border-hairline::after { content: ''; position: absolute; inset: 0; border: 0.5px solid rgba(0,0,0,0.08); border-radius: inherit; pointer-events: none; }
+
+  /* ===== 进度圆环 SVG ===== */
+  .progress-ring-bg { fill: none; stroke: #E2E8F0; }
+  .progress-ring-fill { fill: none; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+
+  /* ===== Toast ===== */
+  .toast-container { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+  .toast { padding: 10px 18px; border-radius: 20px; font-size: 13px; font-weight: 500; color: #fff; opacity: 0; transform: translateY(-8px) scale(0.95); transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1); white-space: nowrap; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+  .toast.show { opacity: 1; transform: translateY(0) scale(1); }
+  .toast.success { background: #10B981; }
+  .toast.error   { background: #EF4444; }
+  .toast.info    { background: #1E3A8A; }
+  .toast.warning { background: #F59E0B; }
+
+  /* ===== 按钮 ===== */
+  .btn-primary { background: #1E3A8A; color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; padding: 13px; width: 100%; cursor: pointer; transition: all 0.15s; font-family: inherit; letter-spacing: 0.3px; }
+  .btn-primary:active { background: #162D6B; transform: scale(0.98); }
+  .btn-outline { background: transparent; color: #1E3A8A; border: 1.5px solid #1E3A8A; border-radius: 12px; font-size: 14px; font-weight: 600; padding: 11px; cursor: pointer; transition: all 0.15s; font-family: inherit; }
+  .btn-outline:active { background: #EFF6FF; }
+  .btn-ghost { background: transparent; border: none; color: #64748B; font-size: 14px; cursor: pointer; font-family: inherit; padding: 8px 12px; border-radius: 8px; transition: background 0.15s; }
+  .btn-ghost:active { background: #F1F5F9; }
+
+  /* ===== 视频播放器 ===== */
+  .video-player { position: relative; background: #0F172A; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; border-radius: 12px; overflow: hidden; }
+  .video-play-btn { width: 56px; height: 56px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s, background 0.2s; }
+  .video-play-btn:active { transform: scale(0.9); background: #fff; }
+  .video-progress { height: 3px; background: #E2E8F0; border-radius: 2px; margin-top: 8px; position: relative; overflow: hidden; }
+  .video-progress-fill { height: 100%; background: #1E3A8A; border-radius: 2px; transition: width 0.3s; }
+
+  /* ===== 考题样式 ===== */
+  .option-item { display: flex; align-items: flex-start; gap: 12px; padding: 13px 14px; border-radius: 10px; border: 1.5px solid #E2E8F0; cursor: pointer; transition: all 0.15s; margin-bottom: 8px; }
+  .option-item:active { background: #EFF6FF; }
+  .option-item.selected { border-color: #1E3A8A; background: #EFF6FF; }
+  .option-item.correct  { border-color: #10B981; background: #ECFDF5; }
+  .option-item.wrong    { border-color: #EF4444; background: #FEF2F2; }
+  .option-dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #CBD5E1; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 11px; font-weight: 700; transition: all 0.15s; margin-top: 1px; }
+  .option-item.selected .option-dot { border-color: #1E3A8A; background: #1E3A8A; color: #fff; }
+  .option-item.correct .option-dot  { border-color: #10B981; background: #10B981; color: #fff; }
+  .option-item.wrong .option-dot    { border-color: #EF4444; background: #EF4444; color: #fff; }
+
+  /* ===== 表格 ===== */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th { background: #F8FAFC; color: #64748B; font-size: 11px; font-weight: 600; padding: 9px 10px; text-align: left; border-bottom: 1px solid #E2E8F0; white-space: nowrap; }
+  .data-table td { font-size: 12px; color: #334155; padding: 10px 10px; border-bottom: 0.5px solid #F1F5F9; vertical-align: middle; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:active td { background: #F8FAFC; }
+
+  /* ===== 进度条 ===== */
+  .prog-bar { height: 4px; background: #E2E8F0; border-radius: 2px; overflow: hidden; }
+  .prog-bar-fill { height: 100%; border-radius: 2px; transition: width 0.8s ease; }
+
+  /* ===== 筛选 Tab ===== */
+  .filter-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 0 16px 12px; scrollbar-width: none; }
+  .filter-tabs::-webkit-scrollbar { display: none; }
+  .filter-tab { flex-shrink: 0; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1.5px solid #E2E8F0; color: #64748B; background: #fff; transition: all 0.15s; }
+  .filter-tab.active { background: #1E3A8A; border-color: #1E3A8A; color: #fff; }
+  .filter-tab:active { opacity: 0.75; }
+
+  /* ===== 弹窗 ===== */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 500; display: none; align-items: flex-end; }
+  .modal-overlay.open { display: flex; animation: fadeIn 0.2s; }
+  .modal-sheet { background: #fff; border-radius: 20px 20px 0 0; padding: 20px 16px calc(20px + env(safe-area-inset-bottom,8px)); width: 100%; animation: slideUp 0.3s cubic-bezier(0.34,1.2,0.64,1); }
+  @keyframes fadeIn  { from { opacity:0 } to { opacity:1 } }
+  @keyframes slideUp { from { transform: translateY(100%) } to { transform: translateY(0) } }
+
+  /* ===== 骨架屏 ===== */
+  .skeleton { background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 6px; }
+  @keyframes shimmer { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
+
+  /* ===== 动画 ===== */
+  .fade-in { animation: fadeInUp 0.4s ease both; }
+  .fade-in-1 { animation-delay: 0.05s; }
+  .fade-in-2 { animation-delay: 0.10s; }
+  .fade-in-3 { animation-delay: 0.15s; }
+  .fade-in-4 { animation-delay: 0.20s; }
+  @keyframes fadeInUp { from { opacity:0; transform: translateY(12px) } to { opacity:1; transform: translateY(0) } }
+
+  /* 分割线 */
+  .divider { height: 0.5px; background: #E2E8F0; margin: 0 16px; }
+
+  /* 滚动区域 */
+  .scroll-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 80px; }
+
+  /* 管理员切换样式 */
+  .role-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px; font-size: 11px; color: rgba(255,255,255,0.9); }
+
+  /* 成绩圆环动画 */
+  @keyframes scoreIn { from { stroke-dashoffset: 314; } }
+
+  /* 搜索框 */
+  .search-bar { display: flex; align-items: center; gap: 8px; background: #F1F5F9; border-radius: 10px; padding: 9px 12px; margin: 0 16px 12px; }
+  .search-bar input { border: none; background: transparent; flex: 1; font-size: 14px; color: #334155; outline: none; font-family: inherit; }
+  .search-bar input::placeholder { color: #94A3B8; }
+
+  /* 数字字体 */
+  .num { font-family: 'DM Mono', monospace; }
+</style>
+</head>
+
+<body>
+<!-- Toast 容器 -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- 弹窗：筛选 -->
+<div class="modal-overlay" id="filterModal" onclick="closeModal('filterModal')">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="flex items-center justify-between mb-4">
+      <span class="text-base font-semibold text-slate-800">筛选条件</span>
+      <button class="text-slate-400" onclick="closeModal('filterModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <p class="text-xs text-slate-500 mb-2 font-medium">培训状态</p>
+    <div class="flex flex-wrap gap-2 mb-4">
+      <span class="filter-tab active" onclick="setFilter(this,'全部')">全部</span>
+      <span class="filter-tab" onclick="setFilter(this,'进行中')">进行中</span>
+      <span class="filter-tab" onclick="setFilter(this,'已完成')">已完成</span>
+      <span class="filter-tab" onclick="setFilter(this,'未开始')">未开始</span>
+      <span class="filter-tab" onclick="setFilter(this,'已过期')">已过期</span>
+    </div>
+    <p class="text-xs text-slate-500 mb-2 font-medium">培训类型</p>
+    <div class="flex flex-wrap gap-2 mb-6">
+      <span class="filter-tab active" onclick="toggleFilterTab(this)">全部类型</span>
+      <span class="filter-tab" onclick="toggleFilterTab(this)">安全规范</span>
+      <span class="filter-tab" onclick="toggleFilterTab(this)">应急处置</span>
+      <span class="filter-tab" onclick="toggleFilterTab(this)">服务礼仪</span>
+      <span class="filter-tab" onclick="toggleFilterTab(this)">车辆维护</span>
+    </div>
+    <button class="btn-primary" onclick="applyFilter()">确定筛选</button>
+  </div>
+</div>
+
+<!-- 弹窗：考试须知 -->
+<div class="modal-overlay" id="examNoticeModal" onclick="closeModal('examNoticeModal')">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="text-center mb-4">
+      <div class="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-3">
+        <i class="fas fa-clipboard-list text-amber-500 text-xl"></i>
+      </div>
+      <p class="text-base font-semibold text-slate-800">考试须知</p>
+    </div>
+    <div class="bg-slate-50 rounded-12px p-4 mb-4 space-y-2 rounded-xl">
+      <div class="flex items-center gap-2 text-sm text-slate-600"><i class="fas fa-clock text-navy w-4 flex-shrink-0"></i>考试时限：<span class="font-semibold text-slate-800">30分钟</span></div>
+      <div class="flex items-center gap-2 text-sm text-slate-600"><i class="fas fa-list-ol text-navy w-4 flex-shrink-0"></i>题目数量：<span class="font-semibold text-slate-800">20题</span>（单选15 + 多选5）</div>
+      <div class="flex items-center gap-2 text-sm text-slate-600"><i class="fas fa-star text-amber-500 w-4 flex-shrink-0"></i>及格分数：<span class="font-semibold text-slate-800">80分</span></div>
+      <div class="flex items-center gap-2 text-sm text-slate-600"><i class="fas fa-redo text-emerald w-4 flex-shrink-0"></i>补考机会：<span class="font-semibold text-slate-800">2次</span></div>
+    </div>
+    <div class="text-xs text-slate-400 mb-4 px-1">考试期间请勿退出，交卷后立即显示成绩。本月内完成培训和考试可获得合规学时认定。</div>
+    <div class="flex gap-3">
+      <button class="btn-outline flex-1" onclick="closeModal('examNoticeModal')">取消</button>
+      <button class="btn-primary flex-1" onclick="startExam()">开始考试</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     移动端主容器 375px
+     ============================================ -->
+<div class="phone-wrap">
+
+  <!-- ======================================
+       屏幕 1：我的培训（首页）
+       ====================================== -->
+  <div class="screen active" id="screen-home">
+    <!-- 顶部导航 -->
+    <div class="top-nav">
+      <div>
+        <div class="text-xs text-blue-200 font-medium">城北公交集团</div>
+        <div class="top-nav-title">安全培训平台</div>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="role-badge"><i class="fas fa-user-shield text-xs"></i>驾驶员</div>
+        <div class="top-nav-icon" onclick="showToast('消息通知', 'info')">
+          <i class="fas fa-bell"></i>
+          <span style="position:absolute;top:10px;right:12px;width:7px;height:7px;background:#F59E0B;border-radius:50%;border:1.5px solid #1E3A8A;"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="scroll-area">
+      <!-- 用户信息 + 本月概览 -->
+      <div style="background:linear-gradient(160deg,#1E3A8A 0%,#2D4EAF 60%,#1d4ed8 100%); padding:20px 16px 32px; margin-bottom:-16px;">
+        <div class="flex items-center gap-3 mb-5 fade-in">
+          <img src="https://picsum.photos/seed/driver1/80/80" class="w-12 h-12 rounded-full border-2 border-white/30 object-cover">
+          <div>
+            <div class="text-white font-semibold text-base">李建国</div>
+            <div class="text-blue-200 text-xs">工号 BJ-2847 · 5路线驾驶员</div>
+          </div>
+          <div class="ml-auto text-right">
+            <div class="text-white/60 text-xs">综合评级</div>
+            <div class="text-amber-400 font-bold text-lg num">A+</div>
+          </div>
+        </div>
+
+        <!-- 本月进度 -->
+        <div class="card fade-in fade-in-1" style="border-radius:16px;">
+          <div class="p-4">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-sm font-semibold text-slate-700">2026年5月培训进度</span>
+              <span class="badge badge-progress">进行中</span>
+            </div>
+            <div class="text-xs text-slate-400 mb-4">截止 2026-05-31 · 还剩 5 天</div>
+            <div class="flex items-center gap-4">
+              <!-- 进度圆环 -->
+              <div class="relative flex-shrink-0" style="width:80px;height:80px;">
+                <svg width="80" height="80" viewBox="0 0 80 80">
+                  <circle class="progress-ring-bg" cx="40" cy="40" r="32" stroke-width="6"/>
+                  <circle class="progress-ring-fill" cx="40" cy="40" r="32" stroke="#1E3A8A" stroke-width="6"
+                    stroke-dasharray="201" stroke-dashoffset="50" transform="rotate(-90 40 40)"/>
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                  <span class="num font-bold text-navy text-lg" style="line-height:1">75%</span>
+                  <span class="text-slate-400 text-xs">完成</span>
+                </div>
+              </div>
+              <!-- 统计 -->
+              <div class="flex-1 space-y-2">
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-slate-500 text-xs">已完成课程</span>
+                  <span class="num font-semibold text-slate-800">3 / 4</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-slate-500 text-xs">学习时长</span>
+                  <span class="num font-semibold text-slate-800">2.5h</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-slate-500 text-xs">考试成绩</span>
+                  <span class="num font-semibold text-emerald">92分</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-slate-500 text-xs">待完成</span>
+                  <span class="text-amber-600 font-semibold text-xs">1 项视频课程</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 快捷入口 -->
+      <div class="px-4 pt-8 pb-2 fade-in fade-in-2">
+        <div class="grid grid-cols-4 gap-3">
+          <div class="flex flex-col items-center gap-1.5 cursor-pointer" onclick="switchTab('tasks')">
+            <div class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background:#EFF6FF;">
+              <i class="fas fa-book-open text-navy text-lg"></i>
+            </div>
+            <span class="text-xs text-slate-600 font-medium">培训任务</span>
+          </div>
+          <div class="flex flex-col items-center gap-1.5 cursor-pointer" onclick="switchTab('exam')">
+            <div class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background:#FFFBEB;">
+              <i class="fas fa-pen-to-square text-amber-500 text-lg"></i>
+            </div>
+            <span class="text-xs text-slate-600 font-medium">在线考试</span>
+          </div>
+          <div class="flex flex-col items-center gap-1.5 cursor-pointer" onclick="showToast('证书功能开发中','info')">
+            <div class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background:#ECFDF5;">
+              <i class="fas fa-certificate text-emerald text-lg"></i>
+            </div>
+            <span class="text-xs text-slate-600 font-medium">我的证书</span>
+          </div>
+          <div class="flex flex-col items-center gap-1.5 cursor-pointer" onclick="switchTab('admin')">
+            <div class="w-12 h-12 rounded-2xl flex items-center justify-center" style="background:#FEF2F2;">
+              <i class="fas fa-chart-bar text-rose text-lg"></i>
+            </div>
+            <span class="text-xs text-slate-600 font-medium">统计报表</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 本月待完成 -->
+      <div class="px-4 mb-3 mt-4">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-sm font-semibold text-slate-800">本月待完成</span>
+          <span class="text-xs text-navy cursor-pointer" onclick="switchTab('tasks')">查看全部 <i class="fas fa-chevron-right text-xs"></i></span>
+        </div>
+        <!-- 待完成卡片 -->
+        <div class="card fade-in fade-in-2 cursor-pointer" onclick="openTaskDetail('video')">
+          <div class="p-4">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#FFFBEB;">
+                <i class="fas fa-video text-amber-500"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between gap-2">
+                  <span class="text-sm font-semibold text-slate-800 leading-snug">新能源公交车辆日常维护与检查规范</span>
+                  <span class="badge badge-warning flex-shrink-0">未完成</span>
+                </div>
+                <div class="text-xs text-slate-400 mt-1">视频课程 · 45分钟 · 截止 05-31</div>
+                <div class="mt-2">
+                  <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
+                    <span>学习进度</span><span class="num">35%</span>
+                  </div>
+                  <div class="prog-bar"><div class="prog-bar-fill" style="width:35%;background:#F59E0B;"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 历史培训记录 -->
+      <div class="px-4 mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-sm font-semibold text-slate-800">近期培训记录</span>
+        </div>
+        <div class="card fade-in fade-in-3">
+          <!-- 记录项 1 -->
+          <div class="flex items-center gap-3 p-4">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#ECFDF5;">
+              <i class="fas fa-check text-emerald text-sm"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium text-slate-800 truncate">城市公交安全驾驶行为规范</div>
+              <div class="text-xs text-slate-400">05-18 已完成 · 考试 <span class="text-emerald font-semibold num">92分</span></div>
+            </div>
+            <i class="fas fa-chevron-right text-slate-300 text-xs"></i>
+          </div>
+          <div class="divider"></div>
+          <!-- 记录项 2 -->
+          <div class="flex items-center gap-3 p-4">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#ECFDF5;">
+              <i class="fas fa-check text-emerald text-sm"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium text-slate-800 truncate">乘客突发疾病应急处置流程</div>
+              <div class="text-xs text-slate-400">05-12 已完成 · 考试 <span class="text-emerald font-semibold num">88分</span></div>
+            </div>
+            <i class="fas fa-chevron-right text-slate-300 text-xs"></i>
+          </div>
+          <div class="divider"></div>
+          <!-- 记录项 3 -->
+          <div class="flex items-center gap-3 p-4">
+            <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#ECFDF5;">
+              <i class="fas fa-check text-emerald text-sm"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium text-slate-800 truncate">文明服务礼仪与投诉处理规范</div>
+              <div class="text-xs text-slate-400">05-05 已完成 · 考试 <span class="text-slate-500 font-semibold num">免考</span></div>
+            </div>
+            <i class="fas fa-chevron-right text-slate-300 text-xs"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- 上月培训统计 -->
+      <div class="px-4 mb-6">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-sm font-semibold text-slate-800">上月培训统计</span>
+          <span class="text-xs text-slate-400">2026年4月</span>
+        </div>
+        <div class="card fade-in fade-in-4 p-4">
+          <div class="grid grid-cols-3 gap-0">
+            <div class="text-center py-2">
+              <div class="num text-2xl font-bold text-navy">5</div>
+              <div class="text-xs text-slate-400 mt-0.5">完成课程</div>
+            </div>
+            <div class="text-center py-2 border-x border-slate-100">
+              <div class="num text-2xl font-bold text-navy">4.2h</div>
+              <div class="text-xs text-slate-400 mt-0.5">学习时长</div>
+            </div>
+            <div class="text-center py-2">
+              <div class="num text-2xl font-bold text-emerald">96</div>
+              <div class="text-xs text-slate-400 mt-0.5">平均分数</div>
+            </div>
+          </div>
+          <div class="mt-3 p-3 rounded-xl" style="background:#ECFDF5;">
+            <div class="flex items-center gap-2">
+              <i class="fas fa-trophy text-amber-500 text-sm"></i>
+              <span class="text-xs font-semibold text-emerald">上月培训完成率 100%，获得优秀学员认证</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================
+       屏幕 2：培训任务列表
+       ====================================== -->
+  <div class="screen" id="screen-tasks">
+    <div class="top-nav">
+      <div class="top-nav-title">培训任务</div>
+      <div class="flex items-center gap-1">
+        <div class="top-nav-icon" onclick="openModal('filterModal')"><i class="fas fa-sliders-h"></i></div>
+      </div>
+    </div>
+
+    <!-- 筛选 Tab -->
+    <div class="pt-3 bg-white border-b border-slate-100">
+      <div class="filter-tabs" id="taskFilterTabs">
+        <span class="filter-tab active" onclick="filterTasks(this,'全部')">全部</span>
+        <span class="filter-tab" onclick="filterTasks(this,'进行中')">进行中</span>
+        <span class="filter-tab" onclick="filterTasks(this,'已完成')">已完成</span>
+        <span class="filter-tab" onclick="filterTasks(this,'未开始')">未开始</span>
+        <span class="filter-tab" onclick="filterTasks(this,'已过期')">已过期</span>
+      </div>
+    </div>
+
+    <!-- 搜索 -->
+    <div class="bg-white pt-3 pb-1">
+      <div class="search-bar">
+        <i class="fas fa-search text-slate-400 text-sm"></i>
+        <input type="text" placeholder="搜索培训课程名称…" oninput="searchTasks(this.value)">
+      </div>
+    </div>
+
+    <div class="scroll-area bg-slate-50">
+      <!-- 月份分组：2026年5月 -->
+      <div class="px-4 pt-4 pb-1">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-1 h-4 rounded bg-navy"></div>
+          <span class="text-sm font-semibold text-slate-700">2026年5月</span>
+          <span class="text-xs text-slate-400">4项培训</span>
+          <span class="ml-auto badge badge-progress">本月</span>
+        </div>
+      </div>
+
+      <div class="px-4 space-y-3" id="taskList">
+        <!-- 任务卡片 1 - 进行中 -->
+        <div class="card task-card cursor-pointer fade-in" data-status="进行中" onclick="openTaskDetail('video')">
+          <div class="p-4">
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#FFFBEB;">
+                  <i class="fas fa-video text-amber-500 text-sm"></i>
+                </div>
+                <span class="badge badge-warning">进行中</span>
+              </div>
+              <span class="text-xs text-slate-400 flex-shrink-0">截止 05-31</span>
+            </div>
+            <div class="text-sm font-semibold text-slate-800 mb-1">新能源公交车辆日常维护与检查规范</div>
+            <div class="text-xs text-slate-400 mb-3">视频课程 + 配套文档 · 预计45分钟</div>
+            <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
+              <span>学习进度</span><span class="num font-semibold text-amber-600">35%</span>
+            </div>
+            <div class="prog-bar mb-3"><div class="prog-bar-fill" style="width:35%;background:#F59E0B;"></div></div>
+            <div class="flex items-center gap-2">
+              <button class="btn-primary text-sm py-2 flex-1" onclick="event.stopPropagation();openTaskDetail('video')">继续学习</button>
+              <button class="w-9 h-9 rounded-xl border border-slate-200 flex items-center justify-center text-slate-400 flex-shrink-0" onclick="event.stopPropagation();showToast('已收藏','success')">
+                <i class="fas fa-bookmark text-sm"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 任务卡片 2 - 已完成 -->
+        <div class="card task-card cursor-pointer fade-in fade-in-1" data-status="已完成" onclick="showToast('查看培训详情','info')">
+          <div class="p-4">
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#ECFDF5;">
+                  <i class="fas fa-check text-emerald text-sm"></i>
+                </div>
+                <span class="badge badge-done">已完成</span>
+              </div>
+              <span class="text-xs text-slate-400 flex-shrink-0">05-18 完成</span>
+            </div>
+            <div class="text-sm font-semibold text-slate-800 mb-1">城市公交安全驾驶行为规范</div>
+            <div class="text-xs text-slate-400 mb-3">视频课程 · 已完成 · 考试成绩 <span class="text-emerald font-bold num">92分</span></div>
+            <div class="prog-bar"><div class="prog-bar-fill" style="width:100%;background:#10B981;"></div></div>
+          </div>
+        </div>
+
+        <!-- 任务卡片 3 - 已完成 -->
+        <div class="card task-card cursor-pointer fade-in fade-in-2" data-status="已完成" onclick="showToast('查看培训详情','info')">
+          <div class="p-4">
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#ECFDF5;">
+                  <i class="fas fa-check text-emerald text-sm"></i>
+                </div>
+                <span class="badge badge-done">已完成</span>
+              </div>
+              <span class="text-xs text-slate-400 flex-shrink-0">05-12 完成</span>
+            </div>
+            <div class="text-sm font-semibold text-slate-800 mb-1">乘客突发疾病应急处置流程</div>
+            <div class="text-xs text-slate-400 mb-3">视频 + 文档 · 已完成 · 考试成绩 <span class="text-emerald font-bold num">88分</span></div>
+            <div class="prog-bar"><div class="prog-bar-fill" style="width:100%;background:#10B981;"></div></div>
+          </div>
+        </div>
+
+        <!-- 任务卡片 4 - 已完成 -->
+        <div class="card task-card cursor-pointer fade-in fade-in-3" data-status="已完成" onclick="showToast('查看培训详情','info')">
+          <div class="p-4">
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#ECFDF5;">
+                  <i class="fas fa-check text-emerald text-sm"></i>
+                </div>
+                <span class="badge badge-done">已完成</span>
+              </div>
+              <span class="text-xs text-slate-400 flex-shrink-0">05-05 完成</span>
+            </div>
+            <div class="text-sm font-semibold text-slate-800 mb-1">文明服务礼仪与投诉处理规范</div>
+            <div class="text-xs text-slate-400 mb-3">文档课程 · 已完成 · 免考</div>
+            <div class="prog-bar"><div class="prog-bar-fill" style="width:100%;background:#10B981;"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 月份分组：2026年4月 -->
+      <div class="px-4 pt-5 pb-1">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-1 h-4 rounded bg-slate-300"></div>
+          <span class="text-sm font-semibold text-slate-600">2026年4月</span>
+          <span class="text-xs text-slate-400">5项培训 · 全部完成</span>
+          <span class="ml-auto badge badge-done">已归档</span>
+        </div>
+      </div>
+
+      <div class="px-4 space-y-3 mb-6">
+        <!-- 4月任务 1 -->
+        <div class="card task-card cursor-pointer" data-status="已完成">
+          <div class="p-4">
+            <div class="flex items-start justify-between gap-2 mb-1">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#ECFDF5;">
+                  <i class="fas fa-check text-emerald text-sm"></i>
+                </div>
+                <span class="badge badge-done">已完成</span>
+              </div>
+              <span class="text-xs text-slate-400 flex-shrink-0">04-28 完成</span>
+            </div>
+            <div class="text-sm font-semibold text-slate-700 mb-1 mt-2">恶劣天气行车安全操作规程</div>
+            <div class="text-xs text-slate-400">视频 + 考试 <span class="text-emerald font-bold num">96分</span></div>
+          </div>
+        </div>
+        <!-- 4月任务 2 -->
+        <div class="card task-card cursor-pointer" data-status="已完成">
+          <div class="p-4">
+            <div class="flex items-start justify-between gap-2 mb-1">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#ECFDF5;">
+                  <i class="fas fa-check text-emerald text-sm"></i>
+                </div>
+                <span class="badge badge-done">已完成</span>
+              </div>
+              <span class="text-xs text-slate-400 flex-shrink-0">04-22 完成</span>
+            </div>
+            <div class="text-sm font-semibold text-slate-700 mb-1 mt-2">公交站台规范停靠与运营管理</div>
+            <div class="text-xs text-slate-400">文档课程 <span class="text-emerald font-bold num">100分</span></div>
+          </div>
+        </div>
+        <!-- 4月任务 3 -->
+        <div class="card task-card cursor-pointer" data-status="已完成">
+          <div class="p-4">
+            <div class="flex items-start justify-between gap-2 mb-1">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:#ECFDF5;">
+                  <i class="fas fa-check text-emerald text-sm"></i>
+                </div>
+                <span class="badge badge-done">已完成</span>
+              </div>
+              <span class="text-xs text-slate-400 flex-shrink-0">04-15 完成</span>
+            </div>
+            <div class="text-sm font-semibold text-slate-700 mb-1 mt-2">疲劳驾驶识别与防控措施</div>
+            <div class="text-xs text-slate-400">视频 + 考试 <span class="text-emerald font-bold num">92分</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================
+       屏幕 3：培训任务详情
+       ====================================== -->
+  <div class="screen" id="screen-detail">
+    <div class="top-nav">
+      <div class="top-nav-icon" onclick="goBack()"><i class="fas fa-arrow-left"></i></div>
+      <div class="top-nav-title">课程详情</div>
+      <div class="top-nav-icon" onclick="showToast('分享链接已复制','success')"><i class="fas fa-share-alt"></i></div>
+    </div>
+
+    <div class="scroll-area">
+      <!-- 视频播放器 -->
+      <div class="px-4 pt-4 pb-3">
+        <div class="video-player" id="videoPlayer" onclick="toggleVideo()">
+          <img src="https://picsum.photos/seed/bus-training/375/211" class="absolute inset-0 w-full h-full object-cover opacity-40">
+          <div class="relative z-10 text-center">
+            <div class="video-play-btn mx-auto mb-3" id="playBtn">
+              <i class="fas fa-play text-navy text-xl ml-1" id="playIcon"></i>
+            </div>
+            <div class="text-white text-xs opacity-80" id="videoStatus">点击播放</div>
+          </div>
+          <!-- 时间标 -->
+          <div class="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-0.5 rounded num">15:38 / 45:00</div>
+        </div>
+        <div class="video-progress mt-2">
+          <div class="video-progress-fill" id="videoProgressFill" style="width:35%;"></div>
+        </div>
+        <div class="flex items-center justify-between mt-1">
+          <span class="text-xs text-slate-400 num">15:38</span>
+          <span class="text-xs text-slate-400 num">45:00</span>
+        </div>
+      </div>
+
+      <!-- 课程信息 -->
+      <div class="px-4 mb-4">
+        <div class="flex items-start justify-between gap-2 mb-2">
+          <h2 class="text-base font-bold text-slate-800 leading-snug flex-1">新能源公交车辆日常维护与检查规范</h2>
+          <span class="badge badge-warning flex-shrink-0">进行中</span>
+        </div>
+        <div class="flex flex-wrap gap-3 text-xs text-slate-400">
+          <span><i class="fas fa-clock mr-1"></i>45分钟</span>
+          <span><i class="fas fa-calendar mr-1"></i>截止 2026-05-31</span>
+          <span><i class="fas fa-user mr-1"></i>安全管理部</span>
+        </div>
+
+        <!-- 学习进度 -->
+        <div class="card mt-4 p-3">
+          <div class="flex items-center justify-between text-sm mb-2">
+            <span class="text-slate-600 font-medium">学习进度</span>
+            <span class="num font-bold text-amber-600">35%</span>
+          </div>
+          <div class="prog-bar"><div class="prog-bar-fill" style="width:35%;background:#F59E0B;"></div></div>
+          <div class="flex justify-between text-xs text-slate-400 mt-1">
+            <span>已学 15分38秒</span><span>剩余 29分22秒</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab：视频 / 文件 / 简介 -->
+      <div class="px-4">
+        <div class="flex border-b border-slate-200 mb-4">
+          <button class="detail-tab-btn pb-2 mr-5 text-sm font-semibold text-navy border-b-2 border-navy" onclick="switchDetailTab(this,'tab-files')">课程资料</button>
+          <button class="detail-tab-btn pb-2 mr-5 text-sm font-medium text-slate-400 border-b-2 border-transparent" onclick="switchDetailTab(this,'tab-intro')">课程介绍</button>
+          <button class="detail-tab-btn pb-2 text-sm font-medium text-slate-400 border-b-2 border-transparent" onclick="switchDetailTab(this,'tab-notes')">学习笔记</button>
+        </div>
+
+        <!-- 文件资料 Tab -->
+        <div id="tab-files" class="detail-tab-content">
+          <div class="space-y-2 mb-4">
+            <!-- 文件 1 - 视频 -->
+            <div class="card p-3 flex items-center gap-3 cursor-pointer" onclick="showToast('视频加载中…','info')">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#EFF6FF;">
+                <i class="fas fa-play-circle text-navy text-lg"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-slate-800 truncate">第1章：新能源车辆基础知识</div>
+                <div class="text-xs text-slate-400">MP4 · 12分20秒</div>
+              </div>
+              <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style="background:#ECFDF5;">
+                <i class="fas fa-check text-emerald text-xs"></i>
+              </div>
+            </div>
+            <!-- 文件 2 - 视频（进行中） -->
+            <div class="card p-3 flex items-center gap-3 cursor-pointer" style="border:1.5px solid #1E3A8A;" onclick="showToast('继续播放第2章','info')">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#1E3A8A;">
+                <i class="fas fa-play text-white text-sm ml-0.5"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-semibold text-navy truncate">第2章：日常检查操作流程 <span class="text-amber-500 text-xs">● 学习中</span></div>
+                <div class="text-xs text-slate-400">MP4 · 18分45秒 · 已看3:18</div>
+              </div>
+              <i class="fas fa-chevron-right text-navy text-xs"></i>
+            </div>
+            <!-- 文件 3 - 视频（未开始） -->
+            <div class="card p-3 flex items-center gap-3 cursor-pointer opacity-60">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#F1F5F9;">
+                <i class="fas fa-lock text-slate-400 text-sm"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-slate-500 truncate">第3章：故障预警与紧急处理</div>
+                <div class="text-xs text-slate-400">MP4 · 14分00秒 · 请先完成第2章</div>
+              </div>
+              <i class="fas fa-chevron-right text-slate-300 text-xs"></i>
+            </div>
+            <!-- PDF 文件 -->
+            <div class="card p-3 flex items-center gap-3 cursor-pointer" onclick="showToast('PDF打开中…','info')">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#FEF2F2;">
+                <i class="fas fa-file-pdf text-rose text-lg"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-slate-800 truncate">新能源车辆维护规范手册 V2.3</div>
+                <div class="text-xs text-slate-400">PDF · 2.8MB · 共48页</div>
+              </div>
+              <button class="text-xs text-navy border border-navy/30 rounded-lg px-2 py-1 flex-shrink-0" onclick="event.stopPropagation();showToast('开始下载…','success')">下载</button>
+            </div>
+            <!-- Word 文件 -->
+            <div class="card p-3 flex items-center gap-3 cursor-pointer" onclick="showToast('文档打开中…','info')">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style="background:#EFF6FF;">
+                <i class="fas fa-file-word text-blue-500 text-lg"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-slate-800 truncate">日检记录表（模板）</div>
+                <div class="text-xs text-slate-400">DOCX · 128KB</div>
+              </div>
+              <button class="text-xs text-navy border border-navy/30 rounded-lg px-2 py-1 flex-shrink-0" onclick="event.stopPropagation();showToast('开始下载…','success')">下载</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 介绍 Tab -->
+        <div id="tab-intro" class="detail-tab-content hidden">
+          <div class="text-sm text-slate-600 leading-6 mb-4">
+            本课程针对公司新能源公交车队（比亚迪K9、宇通E12系列）日常运营维护需求设计，涵盖车辆出车前检查、充电管理、故障识别及上报流程等核心内容。
+          </div>
+          <div class="card p-4 mb-4">
+            <div class="text-xs font-semibold text-slate-700 mb-3">学习目标</div>
+            <div class="space-y-2">
+              <div class="flex items-center gap-2 text-sm text-slate-600"><i class="fas fa-circle-dot text-navy text-xs"></i>掌握新能源车辆出车前37项检查规范</div>
+              <div class="flex items-center gap-2 text-sm text-slate-600"><i class="fas fa-circle-dot text-navy text-xs"></i>了解动力电池安全使用与充电注意事项</div>
+              <div class="flex items-center gap-2 text-sm text-slate-600"><i class="fas fa-circle-dot text-navy text-xs"></i>能够识别常见故障代码并正确上报处理</div>
+              <div class="flex items-center gap-2 text-sm text-slate-600"><i class="fas fa-circle-dot text-navy text-xs"></i>规范填写日常维护保养记录表</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 笔记 Tab -->
+        <div id="tab-notes" class="detail-tab-content hidden">
+          <div class="card p-4 mb-3">
+            <textarea placeholder="在这里记录学习笔记…" class="w-full text-sm text-slate-700 outline-none resize-none" rows="5" style="border:none;font-family:inherit;" onclick="showToast('笔记功能可离线保存','info')"></textarea>
+          </div>
+          <button class="btn-outline w-full" onclick="showToast('笔记已保存','success')">保存笔记</button>
+        </div>
+      </div>
+
+      <!-- 底部操作 -->
+      <div class="px-4 mt-4 mb-4">
+        <button class="btn-primary" onclick="openModal('examNoticeModal')">
+          <i class="fas fa-pen-to-square mr-2"></i>完成学习，参加考试
+        </button>
+        <div class="text-center text-xs text-slate-400 mt-2">需完成所有视频后方可参加考试</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================
+       屏幕 4：在线考试
+       ====================================== -->
+  <div class="screen" id="screen-exam">
+    <div class="top-nav">
+      <div class="top-nav-icon" onclick="goBack()"><i class="fas fa-arrow-left"></i></div>
+      <div class="top-nav-title">在线考试</div>
+      <!-- 倒计时 -->
+      <div class="flex items-center gap-1.5 bg-white/15 rounded-xl px-3 py-1">
+        <i class="fas fa-clock text-amber-300 text-sm"></i>
+        <span class="text-white font-mono text-sm num" id="examTimer">28:45</span>
+      </div>
+    </div>
+
+    <!-- 进度条 -->
+    <div style="background:#162D6B; padding:10px 16px 14px;">
+      <div class="flex items-center justify-between text-xs text-blue-200 mb-2">
+        <span>答题进度</span>
+        <span class="num" id="examProgress">3 / 10</span>
+      </div>
+      <div class="prog-bar" style="background:rgba(255,255,255,0.2);">
+        <div class="prog-bar-fill" id="examProgBar" style="width:30%;background:#F59E0B;"></div>
+      </div>
+    </div>
+
+    <div class="scroll-area bg-slate-50">
+      <!-- 题目导航 -->
+      <div class="px-4 pt-3 pb-2">
+        <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" style="scrollbar-width:none;">
+          <div id="qNav"></div>
+        </div>
+      </div>
+
+      <!-- 题目卡片 -->
+      <div class="px-4 pb-6" id="questionContainer">
+        <!-- 通过JS渲染 -->
+      </div>
+    </div>
+
+    <!-- 底部操作 -->
+    <div style="background:#fff;padding:12px 16px;border-top:0.5px solid #E2E8F0;padding-bottom:calc(12px + env(safe-area-inset-bottom,8px));">
+      <div class="flex gap-3">
+        <button class="btn-outline flex-1" id="prevBtn" onclick="prevQuestion()">
+          <i class="fas fa-chevron-left mr-1"></i>上一题
+        </button>
+        <button class="btn-primary flex-1" id="nextBtn" onclick="nextQuestion()">
+          下一题<i class="fas fa-chevron-right ml-1"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================
+       屏幕 5：考试结果
+       ====================================== -->
+  <div class="screen" id="screen-result">
+    <div class="top-nav">
+      <div class="top-nav-title">考试结果</div>
+      <div class="top-nav-icon" onclick="switchTab('home')"><i class="fas fa-home"></i></div>
+    </div>
+
+    <div class="scroll-area">
+      <!-- 成绩展示 -->
+      <div style="background:linear-gradient(160deg,#1E3A8A,#1d4ed8);padding:32px 16px 48px;margin-bottom:-20px;">
+        <div class="text-center">
+          <div class="relative inline-block mb-4">
+            <svg width="140" height="140" viewBox="0 0 140 140">
+              <circle cx="70" cy="70" r="56" stroke="rgba(255,255,255,0.15)" stroke-width="10" fill="none"/>
+              <circle cx="70" cy="70" r="56" stroke="#F59E0B" stroke-width="10" fill="none"
+                stroke-linecap="round" stroke-dasharray="351.86" stroke-dashoffset="63"
+                transform="rotate(-90 70 70)" id="scoreRing" style="animation:scoreIn 1.5s ease both;"/>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <div class="num text-4xl font-black text-white" id="scoreDisplay">92</div>
+              <div class="text-blue-200 text-sm">分</div>
+            </div>
+          </div>
+          <div class="text-white text-xl font-bold mb-1">恭喜通过考试！</div>
+          <div class="text-blue-200 text-sm">新能源公交车辆日常维护与检查规范</div>
+        </div>
+      </div>
+
+      <!-- 详情卡 -->
+      <div class="px-4 pt-8 pb-4">
+        <div class="card p-4 mb-4 fade-in">
+          <div class="grid grid-cols-3 gap-0 divide-x divide-slate-100">
+            <div class="text-center px-2">
+              <div class="num text-xl font-bold text-emerald">9</div>
+              <div class="text-xs text-slate-400 mt-0.5">答对</div>
+            </div>
+            <div class="text-center px-2">
+              <div class="num text-xl font-bold text-rose">1</div>
+              <div class="text-xs text-slate-400 mt-0.5">答错</div>
+            </div>
+            <div class="text-center px-2">
+              <div class="num text-xl font-bold text-slate-500">26:14</div>
+              <div class="text-xs text-slate-400 mt-0.5">用时</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 成绩条 -->
+        <div class="card p-4 mb-4 fade-in fade-in-1">
+          <div class="flex items-center justify-between text-sm mb-1">
+            <span class="text-slate-600 font-medium">本次得分</span>
+            <span class="text-emerald font-bold num">92分 / 100分</span>
+          </div>
+          <div class="prog-bar mb-3"><div class="prog-bar-fill" style="width:92%;background:#10B981;"></div></div>
+          <div class="flex items-center gap-2 p-2 rounded-xl" style="background:#ECFDF5;">
+            <i class="fas fa-circle-check text-emerald"></i>
+            <span class="text-xs text-emerald font-semibold">已达到及格线（80分），本月培训学时已认定</span>
+          </div>
+        </div>
+
+        <!-- 错题回顾 -->
+        <div class="card fade-in fade-in-2 mb-4">
+          <div class="p-4 border-b border-slate-100">
+            <span class="text-sm font-semibold text-slate-800">错题回顾</span>
+          </div>
+          <div class="p-4">
+            <div class="p-3 rounded-xl" style="background:#FEF2F2;">
+              <div class="text-xs font-semibold text-rose mb-1">第7题（错误）</div>
+              <div class="text-sm text-slate-700 mb-2">新能源公交车在低温环境下，续航里程下降幅度通常为？</div>
+              <div class="text-xs text-slate-500 mb-1">你的回答：<span class="text-rose">20%~30%</span></div>
+              <div class="text-xs text-slate-500">正确答案：<span class="text-emerald font-semibold">30%~40%</span></div>
+              <div class="mt-2 text-xs text-slate-400 leading-5">解析：锂电池在0℃以下活性下降，北方冬季实测数据显示新能源公交续航降幅通常在30%~40%之间，司机应合理规划充电节点。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-3 mb-6">
+          <button class="btn-outline flex-1" onclick="switchTab('tasks')">返回任务</button>
+          <button class="btn-primary flex-1" onclick="showToast('证书已生成，可在我的证书查看','success')">
+            <i class="fas fa-certificate mr-1"></i>查看证书
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================
+       屏幕 6：管理员视图 - 培训进度
+       ====================================== -->
+  <div class="screen" id="screen-admin">
+    <div class="top-nav">
+      <div class="top-nav-title">培训管理</div>
+      <div class="flex items-center gap-1">
+        <div class="role-badge"><i class="fas fa-shield-halved text-xs"></i>管理员</div>
+        <div class="top-nav-icon" onclick="showToast('报表导出成功','success')"><i class="fas fa-download"></i></div>
+      </div>
+    </div>
+
+    <div class="scroll-area">
+      <!-- 概览统计 -->
+      <div style="background:linear-gradient(160deg,#1E3A8A,#2D4EAF);padding:16px 16px 28px;margin-bottom:-12px;">
+        <div class="text-blue-200 text-xs mb-2 font-medium">2026年5月 · 城北公交集团</div>
+        <div class="grid grid-cols-2 gap-3">
+          <div class="card p-3 text-center fade-in">
+            <div class="num text-2xl font-bold text-navy">89%</div>
+            <div class="text-xs text-slate-500 mt-0.5">整体完成率</div>
+            <div class="prog-bar mt-2"><div class="prog-bar-fill" style="width:89%;background:#1E3A8A;"></div></div>
+          </div>
+          <div class="card p-3 text-center fade-in fade-in-1">
+            <div class="num text-2xl font-bold text-emerald">87.4</div>
+            <div class="text-xs text-slate-500 mt-0.5">平均考试分数</div>
+            <div class="prog-bar mt-2"><div class="prog-bar-fill" style="width:87.4%;background:#10B981;"></div></div>
+          </div>
+          <div class="card p-3 text-center fade-in fade-in-2">
+            <div class="num text-2xl font-bold text-amber-500">12</div>
+            <div class="text-xs text-slate-500 mt-0.5">待完成人数</div>
+          </div>
+          <div class="card p-3 text-center fade-in fade-in-3">
+            <div class="num text-2xl font-bold text-rose">3</div>
+            <div class="text-xs text-slate-500 mt-0.5">即将过期（3天）</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 筛选 -->
+      <div class="px-4 pt-5 mb-3 flex items-center gap-2">
+        <span class="text-sm font-semibold text-slate-800 flex-1">驾驶员培训进度</span>
+        <select class="text-xs text-slate-600 border border-slate-200 rounded-lg px-2 py-1.5 bg-white outline-none" style="font-family:inherit;" onchange="showToast('筛选已更新','info')">
+          <option>全部线路</option>
+          <option>1路线</option>
+          <option>5路线</option>
+          <option>8路线</option>
+          <option>12路线</option>
+        </select>
+        <select class="text-xs text-slate-600 border border-slate-200 rounded-lg px-2 py-1.5 bg-white outline-none" style="font-family:inherit;" onchange="showToast('筛选已更新','info')">
+          <option>全部状态</option>
+          <option>已完成</option>
+          <option>进行中</option>
+          <option>未开始</option>
+          <option>已过期</option>
+        </select>
+      </div>
+
+      <!-- 进度表格 -->
+      <div class="px-4 mb-4">
+        <div class="card overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="data-table" style="min-width:500px;">
+              <thead>
+                <tr>
+                  <th style="min-width:80px;">姓名/工号</th>
+                  <th style="min-width:60px;">线路</th>
+                  <th style="min-width:80px;">完成课程</th>
+                  <th style="min-width:70px;">考试成绩</th>
+                  <th style="min-width:80px;">状态</th>
+                  <th style="min-width:70px;">完成时间</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr onclick="showToast('查看李建国详细培训记录','info')" style="cursor:pointer;">
+                  <td>
+                    <div class="font-semibold text-slate-800">李建国</div>
+                    <div class="text-slate-400" style="font-size:10px;">BJ-2847</div>
+                  </td>
+                  <td><span class="badge badge-pending text-xs">5路</span></td>
+                  <td><span class="num font-semibold text-slate-700">3/4</span><span class="text-slate-400 text-xs"> 75%</span></td>
+                  <td><span class="num font-semibold text-emerald">92分</span></td>
+                  <td><span class="badge badge-warning" style="font-size:10px;">进行中</span></td>
+                  <td class="text-slate-400 text-xs">—</td>
+                </tr>
+                <tr onclick="showToast('查看王大志详细培训记录','info')" style="cursor:pointer;">
+                  <td>
+                    <div class="font-semibold text-slate-800">王大志</div>
+                    <div class="text-slate-400" style="font-size:10px;">BJ-1923</div>
+                  </td>
+                  <td><span class="badge badge-pending text-xs">1路</span></td>
+                  <td><span class="num font-semibold text-slate-700">4/4</span><span class="text-emerald text-xs"> ✓</span></td>
+                  <td><span class="num font-semibold text-emerald">96分</span></td>
+                  <td><span class="badge badge-done" style="font-size:10px;">已完成</span></td>
+                  <td class="text-slate-400 text-xs">05-20</td>
+                </tr>
+                <tr onclick="showToast('查看陈秀芳详细培训记录','info')" style="cursor:pointer;">
+                  <td>
+                    <div class="font-semibold text-slate-800">陈秀芳</div>
+                    <div class="text-slate-400" style="font-size:10px;">BJ-3156</div>
+                  </td>
+                  <td><span class="badge badge-pending text-xs">8路</span></td>
+                  <td><span class="num font-semibold text-slate-700">4/4</span><span class="text-emerald text-xs"> ✓</span></td>
+                  <td><span class="num font-semibold text-emerald">88分</span></td>
+                  <td><span class="badge badge-done" style="font-size:10px;">已完成</span></td>
+                  <td class="text-slate-400 text-xs">05-18</td>
+                </tr>
+                <tr style="cursor:pointer;" onclick="showToast('发送提醒给张伟','success')">
+                  <td>
+                    <div class="font-semibold text-slate-800">张伟</div>
+                    <div class="text-slate-400" style="font-size:10px;">BJ-0847</div>
+                  </td>
+                  <td><span class="badge badge-pending text-xs">12路</span></td>
+                  <td><span class="num font-semibold text-amber-600">1/4</span><span class="text-slate-400 text-xs"> 25%</span></td>
+                  <td><span class="text-slate-400 text-xs">未考试</span></td>
+                  <td><span class="badge badge-warning" style="font-size:10px;background:#FEF2F2;color:#DC2626;">即将过期</span></td>
+                  <td class="text-slate-400 text-xs">—</td>
+                </tr>
+                <tr style="cursor:pointer;" onclick="showToast('发送提醒给刘明','success')">
+                  <td>
+                    <div class="font-semibold text-slate-800">刘明</div>
+                    <div class="text-slate-400" style="font-size:10px;">BJ-2214</div>
+                  </td>
+                  <td><span class="badge badge-pending text-xs">5路</span></td>
+                  <td><span class="num font-semibold text-amber-600">0/4</span><span class="text-slate-400 text-xs"> 0%</span></td>
+                  <td><span class="text-slate-400 text-xs">未考试</span></td>
+                  <td><span class="badge badge-pending" style="font-size:10px;">未开始</span></td>
+                  <td class="text-slate-400 text-xs">—</td>
+                </tr>
+                <tr style="cursor:pointer;" onclick="showToast('查看赵红梅详细培训记录','info')">
+                  <td>
+                    <div class="font-semibold text-slate-800">赵红梅</div>
+                    <div class="text-slate-400" style="font-size:10px;">BJ-1567</div>
+                  </td>
+                  <td><span class="badge badge-pending text-xs">8路</span></td>
+                  <td><span class="num font-semibold text-slate-700">4/4</span><span class="text-emerald text-xs"> ✓</span></td>
+                  <td><span class="num font-semibold text-emerald">100分</span></td>
+                  <td><span class="badge badge-done" style="font-size:10px;">已完成</span></td>
+                  <td class="text-slate-400 text-xs">05-15</td>
+                </tr>
+                <tr style="cursor:pointer;" onclick="showToast('查看孙志国详细培训记录','info')">
+                  <td>
+                    <div class="font-semibold text-slate-800">孙志国</div>
+                    <div class="text-slate-400" style="font-size:10px;">BJ-3891</div>
+                  </td>
+                  <td><span class="badge badge-pending text-xs">1路</span></td>
+                  <td><span class="num font-semibold text-slate-700">2/4</span><span class="text-slate-400 text-xs"> 50%</span></td>
+                  <td><span class="text-slate-400 text-xs">未考试</span></td>
+                  <td><span class="badge badge-warning" style="font-size:10px;">进行中</span></td>
+                  <td class="text-slate-400 text-xs">—</td>
+                </tr>
+                <tr style="cursor:pointer;" onclick="showToast('查看吴丽华详细培训记录','info')">
+                  <td>
+                    <div class="font-semibold text-slate-800">吴丽华</div>
+                    <div class="text-slate-400" style="font-size:10px;">BJ-2409</div>
+                  </td>
+                  <td><span class="badge badge-pending text-xs">12路</span></td>
+                  <td><span class="num font-semibold text-slate-700">4/4</span><span class="text-emerald text-xs"> ✓</span></td>
+                  <td><span class="num font-semibold text-emerald">84分</span></td>
+                  <td><span class="badge badge-done" style="font-size:10px;">已完成</span></td>
+                  <td class="text-slate-400 text-xs">05-22</td>
+                </tr>
+                <tr style="cursor:pointer;" onclick="showToast('发送提醒给马国强','success')">
+                  <td>
+                    <div class="font-semibold text-slate-800">马国强</div>
+                    <div class="text-slate-400" style="font-size:10px;">BJ-0562</div>
+                  </td>
+                  <td><span class="badge badge-pending text-xs">5路</span></td>
+                  <td><span class="num font-semibold text-amber-600">0/4</span></td>
+                  <td><span class="text-slate-400 text-xs">未考试</span></td>
+                  <td><span class="badge badge-expired" style="font-size:10px;">已过期</span></td>
+                  <td class="text-slate-400 text-xs">—</td>
+                </tr>
+                <tr style="cursor:pointer;" onclick="showToast('查看郑晓燕详细培训记录','info')">
+                  <td>
+                    <div class="font-semibold text-slate-800">郑晓燕</div>
+                    <div class="text-slate-400" style="font-size:10px;">BJ-1782</div>
+                  </td>
+                  <td><span class="badge badge-pending text-xs">8路</span></td>
+                  <td><span class="num font-semibold text-slate-700">3/4</span><span class="text-slate-400 text-xs"> 75%</span></td>
+                  <td><span class="num font-semibold text-emerald">90分</span></td>
+                  <td><span class="badge badge-warning" style="font-size:10px;">进行中</span></td>
+                  <td class="text-slate-400 text-xs">—</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="flex items-center justify-between mt-3 px-1">
+          <span class="text-xs text-slate-400">共 47 条记录，当前展示 10 条</span>
+          <div class="flex gap-2">
+            <button class="text-xs text-slate-400 border border-slate-200 rounded-lg px-3 py-1.5 bg-white" onclick="showToast('加载更多…','info')">加载更多</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 批量提醒 -->
+      <div class="px-4 mb-6">
+        <div class="card p-4">
+          <div class="flex items-center gap-2 mb-3">
+            <i class="fas fa-bell text-amber-500 text-sm"></i>
+            <span class="text-sm font-semibold text-slate-800">待提醒人员</span>
+            <span class="badge badge-warning">3人</span>
+          </div>
+          <div class="text-xs text-slate-500 mb-3">张伟、刘明、马国强 尚未完成本月培训，截止日期 2026-05-31</div>
+          <div class="flex gap-2">
+            <button class="btn-outline text-sm py-2 flex-1" onclick="showToast('消息已推送给3名驾驶员','success')">
+              <i class="fas fa-paper-plane mr-1"></i>推送提醒
+            </button>
+            <button class="btn-primary text-sm py-2 flex-1" onclick="showToast('报表已导出至管理后台','success')">
+              <i class="fas fa-file-export mr-1"></i>导出报表
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================
+       底部 Tab 导航
+       ====================================== -->
+  <div class="bottom-tab" id="bottomTab">
+    <div class="tab-item active" id="tab-home" onclick="switchTab('home')">
+      <i class="fas fa-house tab-icon"></i>
+      <span class="tab-label">首页</span>
+    </div>
+    <div class="tab-item" id="tab-tasks" onclick="switchTab('tasks')">
+      <i class="fas fa-book-open tab-icon"></i>
+      <span class="tab-label">培训</span>
+    </div>
+    <div class="tab-item" id="tab-exam-tab" onclick="switchTab('detail')">
+      <i class="fas fa-pen-to-square tab-icon"></i>
+      <span class="tab-label">考试</span>
+    </div>
+    <div class="tab-item" id="tab-admin" onclick="switchTab('admin')">
+      <i class="fas fa-chart-bar tab-icon"></i>
+      <span class="tab-label">管理</span>
+    </div>
+  </div>
+
+</div><!-- /phone-wrap -->
+
+<script>
+// ==============================
+// 屏幕切换
+// ==============================
+let currentScreen = 'home';
+let prevScreen = 'home';
+
+function switchTab(name) {
+  // 隐藏所有屏幕
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  // Tab高亮
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  const tabMap = { home:'tab-home', tasks:'tab-tasks', detail:'tab-exam-tab', exam:'tab-exam-tab', result:'tab-exam-tab', admin:'tab-admin' };
+  const tabEl = document.getElementById(tabMap[name]);
+  if (tabEl) tabEl.classList.add('active');
+  prevScreen = currentScreen;
+  currentScreen = name;
+  // 如果切换到考试tab但还没开始，先去详情
+  if (name === 'exam') initExam();
+}
+
+function goBack() {
+  switchTab(prevScreen === currentScreen ? 'home' : prevScreen);
+}
+
+function openTaskDetail(type) {
+  prevScreen = currentScreen;
+  switchTab('detail');
+}
+
+// ==============================
+// Toast 通知
+// ==============================
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  const icons = { success:'circle-check', error:'circle-xmark', info:'circle-info', warning:'triangle-exclamation' };
+  el.innerHTML = `<i class="fas fa-${icons[type]||'circle-info'} mr-2"></i>${msg}`;
+  container.appendChild(el);
+  setTimeout(() => el.classList.add('show'), 10);
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 300);
+  }, 2500);
+}
+
+// ==============================
+// 弹窗
+// ==============================
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function setFilter(el, val) {
+  document.querySelectorAll('#filterModal .filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+function toggleFilterTab(el) { el.classList.toggle('active'); }
+function applyFilter() {
+  closeModal('filterModal');
+  showToast('筛选已应用', 'success');
+}
+
+// ==============================
+// 任务列表筛选
+// ==============================
+function filterTasks(el, status) {
+  document.querySelectorAll('#taskFilterTabs .filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const cards = document.querySelectorAll('.task-card');
+  cards.forEach(c => {
+    if (status === '全部' || c.dataset.status === status) {
+      c.style.display = '';
+    } else {
+      c.style.display = 'none';
+    }
+  });
+}
+
+function searchTasks(val) {
+  const cards = document.querySelectorAll('.task-card');
+  cards.forEach(c => {
+    const text = c.textContent.toLowerCase();
+    c.style.display = text.includes(val.toLowerCase()) ? '' : 'none';
+  });
+}
+
+// ==============================
+// 视频交互
+// ==============================
+let videoPlaying = false;
+let videoInterval = null;
+let videoProgress = 35;
+
+function toggleVideo() {
+  videoPlaying = !videoPlaying;
+  const icon = document.getElementById('playIcon');
+  const status = document.getElementById('videoStatus');
+  const btn = document.getElementById('playBtn');
+  if (videoPlaying) {
+    icon.className = 'fas fa-pause text-navy text-xl';
+    status.textContent = '正在播放';
+    btn.style.background = 'rgba(255,255,255,0.95)';
+    // 模拟进度推进
+    videoInterval = setInterval(() => {
+      if (videoProgress < 100) {
+        videoProgress = Math.min(videoProgress + 0.5, 100);
+        document.getElementById('videoProgressFill').style.width = videoProgress + '%';
+        if (videoProgress >= 100) {
+          clearInterval(videoInterval);
+          showToast('第2章学习完成！', 'success');
+          videoPlaying = false;
+          icon.className = 'fas fa-play text-navy text-xl ml-1';
+          status.textContent = '已完成';
+        }
+      }
+    }, 200);
+  } else {
+    icon.className = 'fas fa-play text-navy text-xl ml-1';
+    status.textContent = '已暂停';
+    clearInterval(videoInterval);
+  }
+}
+
+// ==============================
+// 详情 Tab 切换
+// ==============================
+function switchDetailTab(btn, tabId) {
+  document.querySelectorAll('.detail-tab-btn').forEach(b => {
+    b.classList.remove('text-navy', 'border-navy', 'font-semibold');
+    b.classList.add('text-slate-400', 'border-transparent', 'font-medium');
+  });
+  btn.classList.add('text-navy', 'border-navy', 'font-semibold');
+  btn.classList.remove('text-slate-400', 'border-transparent', 'font-medium');
+  document.querySelectorAll('.detail-tab-content').forEach(t => t.classList.add('hidden'));
+  document.getElementById(tabId).classList.remove('hidden');
+}
+
+// ==============================
+// 在线考试
+// ==============================
+const questions = [
+  {
+    type: 'single',
+    q: '新能源公交车出车前，驾驶员首先应检查的系统是？',
+    opts: ['A. 制动系统气压', 'B. 动力电池剩余电量与充电状态', 'C. 空调系统运行状态', 'D. 车身外观和轮胎磨损'],
+    answer: 1
+  },
+  {
+    type: 'single',
+    q: '公交车日常检查中，轮胎气压的标准检查频率是？',
+    opts: ['A. 每月检查一次', 'B. 每周检查一次', 'C. 每日出车前检查', 'D. 每次换班前检查'],
+    answer: 2
+  },
+  {
+    type: 'single',
+    q: '发现车辆制动系统异常（如制动踏板下沉）时，驾驶员应？',
+    opts: ['A. 低速驾驶，谨慎完成当班任务', 'B. 立即靠边停车，上报调度中心', 'C. 使用手刹辅助，继续行驶', 'D. 自行检查后决定是否出车'],
+    answer: 1
+  },
+  {
+    type: 'single',
+    q: '新能源公交车辆在低温环境（气温低于0℃）下，续航里程通常下降幅度为？',
+    opts: ['A. 10%~20%', 'B. 20%~30%', 'C. 30%~40%', 'D. 超过50%'],
+    answer: 2
+  },
+  {
+    type: 'single',
+    q: '动力电池充电完成后，若长时间停放（超过24小时），应将电量保持在？',
+    opts: ['A. 100% 满电状态', 'B. 90%~100%', 'C. 60%~80%', 'D. 20%~30%'],
+    answer: 2
+  },
+  {
+    type: 'single',
+    q: '车辆仪表盘出现"电池过热"警示灯时，正确处置是？',
+    opts: ['A. 继续行驶并观察', 'B. 开窗通风，等待自然冷却', 'C. 立即安全停车，疏散乘客并报告', 'D. 打开车辆电池舱散热'],
+    answer: 2
+  },
+  {
+    type: 'single',
+    q: '依据本公司规定，驾驶员发现车辆故障应在多长时间内上报调度？',
+    opts: ['A. 30分钟内', 'B. 1小时内', 'C. 班次结束前', 'D. 发现后立即上报'],
+    answer: 3
+  },
+  {
+    type: 'single',
+    q: '车辆例行检查时，以下哪项不属于外观检查范围？',
+    opts: ['A. 车窗玻璃完好性', 'B. 车身号牌固定情况', 'C. 发动机控制模块程序版本', 'D. 轮胎外侧磨损情况'],
+    answer: 2
+  },
+  {
+    type: 'single',
+    q: '公交车制动气压表正常工作气压范围通常为？',
+    opts: ['A. 0.2~0.4 MPa', 'B. 0.55~0.75 MPa', 'C. 0.8~1.0 MPa', 'D. 1.2~1.5 MPa'],
+    answer: 1
+  },
+  {
+    type: 'single',
+    q: '按照公司安全管理规定，以下哪种情况可以照常出车？',
+    opts: ['A. 单侧车灯故障', 'B. 电池剩余电量为18%', 'C. 车内广播系统故障', 'D. 雨刮器橡皮条老化'],
+    answer: 2
+  }
+];
+
+let currentQ = 0;
+let userAnswers = new Array(questions.length).fill(-1);
+let examStarted = false;
+let timerInterval = null;
+let timeLeft = 28 * 60 + 45;
+
+function startExam() {
+  closeModal('examNoticeModal');
+  switchTab('exam');
+  if (!examStarted) {
+    examStarted = true;
+    initExam();
+    startTimer();
+  }
+}
+
+function initExam() {
+  renderQuestion(currentQ);
+  renderNav();
+  updateProgress();
+}
+
+function renderQuestion(idx) {
+  const q = questions[idx];
+  const container = document.getElementById('questionContainer');
+  let html = `
+    <div class="card p-4 mb-4">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-xs font-semibold text-navy bg-navy/10 px-2 py-0.5 rounded-full">${q.type === 'single' ? '单选题' : '多选题'}</span>
+        <span class="text-xs text-slate-400">第 ${idx+1} / ${questions.length} 题 · 10分</span>
+      </div>
+      <p class="text-sm font-semibold text-slate-800 leading-6 mb-4">${q.q}</p>
+      <div id="opts">
+  `;
+  q.opts.forEach((opt, i) => {
+    const letters = ['A','B','C','D'];
+    const isSelected = userAnswers[idx] === i;
+    html += `
+      <div class="option-item ${isSelected ? 'selected':''}" onclick="selectOption(${i})">
+        <div class="option-dot">${letters[i]}</div>
+        <span class="text-sm text-slate-700 flex-1">${opt.substring(3)}</span>
+      </div>
+    `;
+  });
+  html += `</div></div>`;
+  container.innerHTML = html;
+  // 更新按钮
+  document.getElementById('prevBtn').disabled = idx === 0;
+  document.getElementById('prevBtn').style.opacity = idx === 0 ? '0.4' : '1';
+  if (idx === questions.length - 1) {
+    document.getElementById('nextBtn').textContent = '交卷';
+    document.getElementById('nextBtn').innerHTML = '<i class="fas fa-paper-plane mr-1"></i>提交答卷';
+    document.getElementById('nextBtn').onclick = submitExam;
+  } else {
+    document.getElementById('nextBtn').innerHTML = '下一题<i class="fas fa-chevron-right ml-1"></i>';
+    document.getElementById('nextBtn').onclick = nextQuestion;
+  }
+}
+
+function selectOption(idx) {
+  userAnswers[currentQ] = idx;
+  renderQuestion(currentQ);
+  renderNav();
+}
+
+function nextQuestion() {
+  if (currentQ < questions.length - 1) {
+    currentQ++;
+    renderQuestion(currentQ);
+    updateProgress();
+    scrollToTop();
+  }
+}
+
+function prevQuestion() {
+  if (currentQ > 0) {
+    currentQ--;
+    renderQuestion(currentQ);
+    updateProgress();
+    scrollToTop();
+  }
+}
+
+function scrollToTop() {
+  document.getElementById('screen-exam').querySelector('.scroll-area').scrollTop = 0;
+}
+
+function updateProgress() {
+  const answered = userAnswers.filter(a => a !== -1).length;
+  document.getElementById('examProgress').textContent = `${answered} / ${questions.length}`;
+  document.getElementById('examProgBar').style.width = (answered / questions.length * 100) + '%';
+}
+
+function renderNav() {
+  const navHtml = questions.map((_, i) => {
+    let bg = 'background:#E2E8F0;color:#64748B;';
+    if (userAnswers[i] !== -1) bg = 'background:#1E3A8A;color:#fff;';
+    if (i === currentQ) bg = 'background:#F59E0B;color:#fff;';
+    return `<span style="width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;margin-right:6px;${bg}" onclick="jumpToQuestion(${i})">${i+1}</span>`;
+  }).join('');
+  const navContainer = document.getElementById('qNav');
+  navContainer.innerHTML = navHtml;
+  navContainer.style.display = 'flex';
+  navContainer.style.flexWrap = 'nowrap';
+}
+
+function jumpToQuestion(idx) {
+  currentQ = idx;
+  renderQuestion(idx);
+  updateProgress();
+}
+
+function startTimer() {
+  timerInterval = setInterval(() => {
+    if (timeLeft <= 0) { clearInterval(timerInterval); submitExam(); return; }
+    timeLeft--;
+    const m = Math.floor(timeLeft / 60).toString().padStart(2,'0');
+    const s = (timeLeft % 60).toString().padStart(2,'0');
+    const el = document.getElementById('examTimer');
+    if (el) el.textContent = `${m}:${s}`;
+    if (timeLeft <= 300) { if(el) el.style.color = '#FCD34D'; }
+  }, 1000);
+}
+
+function submitExam() {
+  clearInterval(timerInterval);
+  // 计算分数：每题10分，答对得10分
+  let score = 0;
+  questions.forEach((q, i) => {
+    if (userAnswers[i] === q.answer) score += 10;
+  });
+  document.getElementById('scoreDisplay').textContent = score;
+  // 更新成绩环
+  const ring = document.getElementById('scoreRing');
+  if (ring) {
+    const circumference = 351.86;
+    const offset = circumference * (1 - score / 100);
+    ring.style.strokeDashoffset = offset;
+    ring.style.stroke = score >= 80 ? '#F59E0B' : '#EF4444';
+  }
+  const resultTitle = document.querySelector('#screen-result .text-xl.font-bold');
+  if (resultTitle) resultTitle.textContent = score >= 80 ? '恭喜通过考试！' : '很遗憾，未达到及格线';
+  const resultBadge = document.querySelector('#screen-result .text-xs.text-emerald.font-semibold');
+  if (resultBadge) {
+    if (score >= 80) {
+      resultBadge.textContent = `已达到及格线（80分），本月培训学时已认定`;
+      resultBadge.parentElement.style.background = '#ECFDF5';
+    } else {
+      resultBadge.textContent = `未达到及格线（80分），请复习后参加补考`;
+      resultBadge.style.color = '#DC2626';
+      resultBadge.parentElement.style.background = '#FEF2F2';
+    }
+  }
+  switchTab('result');
+  showToast(score >= 80 ? `考试通过！得分${score}分` : `未通过，得分${score}分，需补考`, score >= 80 ? 'success' : 'error');
+}
+
+// ==============================
+// 考试倒计时启动（屏幕5的占位数据）
+// ==============================
+// 考试结果页面已预先填写示例数据
+
+// ==============================
+// 初始化（支持 URL ?screen= 参数自动跳屏）
+// ==============================
+document.addEventListener('DOMContentLoaded', () => {
+  initExam();
+  const params = new URLSearchParams(window.location.search);
+  const screenParam = params.get('screen');
+  if (screenParam) switchTab(screenParam);
+});
+</script>
+
+<!--
+  ================================
+  设计决策说明
+  ================================
+  1. 【分层信息架构】首页 → 任务列表 → 课程详情 → 考试 → 成绩 构成完整学习闭环，
+     底部 Tab 只暴露 4 个核心入口，降低认知负担，符合驾驶员群体操作习惯。
+
+  2. 【进度可视化】主页使用 SVG 圆环进度条展示月度完成率，任务卡片和视频播放器
+     使用线性进度条，两种形式互补，直观传达不同粒度的进度信息。
+
+  3. 【状态颜色系统】进行中(琥珀)、已完成(翠绿)、未开始(灰)、即将过期(深红)、
+     已过期(红) 五态严格区分，色彩选择兼顾深蓝主色调的对比度和可读性。
+
+  4. 【管理员视角分离】管理员 Tab 提供横向滚动数据表格（min-width:500px），
+     清晰展示所有驾驶员的培训进度差异，并内置批量推送提醒功能，解决完成率管理痛点。
+
+  5. 【即时反馈设计】考试答题后即时改变选项状态（选中/正确/错误），交卷后
+     动画呈现分数圆环，错题回顾直接展示解析，形成完整的反馈闭环。
+-->
+</body>
+</html>
