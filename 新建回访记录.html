@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>新建回访记录</title>
+<style>
+  :root{
+    --color-primary:#EE7202;
+    --color-border:#EFEFEF;
+    --color-text-main:#1A1A1A;
+    --color-text-sub:#999999;
+    --color-bg:#F5F5F7;
+    --color-green:#34B566;
+    --color-orange:#EE7202;
+    --color-red:#F23030;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{
+    font-family:"PingFang SC","Helvetica Neue",Arial,sans-serif;
+    color:var(--color-text-main);
+    -webkit-font-smoothing:antialiased;
+    background:#E5E5E5;
+  }
+  body{
+    display:flex;
+    justify-content:center;
+    padding:24px 0;
+    min-height:100vh;
+  }
+  .page{
+    width:375px;
+    height:812px;
+    max-height:calc(100vh - 48px);
+    margin:0 auto;
+    background:#FFFFFF;
+    position:relative;
+    overflow:hidden;
+    box-shadow:0 0 24px rgba(0,0,0,0.12);
+  }
+  .scroll-area{
+    width:100%;
+    height:100%;
+    overflow-y:auto;
+  }
+
+  /* ---------- Header ---------- */
+  .navbar{
+    height:88px;
+    background:var(--color-primary);
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    position:relative;
+    padding-bottom:14px;
+  }
+  .navbar .back{
+    position:absolute;
+    left:16px;
+    bottom:14px;
+    width:22px;
+    height:22px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .navbar .back svg{width:11px;height:18px;}
+  .navbar .title{
+    color:#FFFFFF;
+    font-size:18px;
+    font-weight:600;
+    letter-spacing:0.5px;
+  }
+
+  /* ---------- Form rows ---------- */
+  .form-list{
+    background:#FFFFFF;
+  }
+  .form-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    height:56px;
+    padding:0 16px;
+    border-bottom:1px solid var(--color-border);
+    font-size:15px;
+  }
+  .form-row .row-label{
+    color:var(--color-text-main);
+    white-space:nowrap;
+  }
+  .row-value{
+    display:flex;
+    align-items:center;
+    gap:4px;
+    color:var(--color-text-sub);
+  }
+  .row-value.filled{color:var(--color-text-main);}
+  .row-value .chevron{
+    color:#C9C9C9;
+    font-size:16px;
+    line-height:1;
+  }
+  /* upload row (expands below label) */
+  .upload-row{
+    padding:14px 16px;
+    border-bottom:1px solid var(--color-border);
+  }
+  .upload-row-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:12px;
+  }
+  .upload-grid{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .upload-box{
+    width:64px;
+    height:64px;
+    border:1px dashed #D9D9D9;
+    border-radius:6px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    color:#BBBBBB;
+    font-size:11px;
+    background:#FAFAFA;
+    gap:2px;
+  }
+  .upload-box .plus{font-size:20px;line-height:1;}
+  .thumb{
+    width:64px;
+    height:64px;
+    border-radius:6px;
+    overflow:hidden;
+    position:relative;
+    border:1px solid var(--color-border);
+  }
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .thumb .remove{
+    position:absolute;
+    top:2px;right:2px;
+    width:16px;height:16px;
+    background:rgba(0,0,0,0.5);
+    border-radius:50%;
+    color:#fff;
+    font-size:11px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .file-input{display:none;}
+
+  /* ---------- Submit button ---------- */
+  .submit-wrap{
+    padding:32px 16px 0;
+  }
+  .btn-submit{
+    width:100%;
+    height:48px;
+    border:none;
+    border-radius:6px;
+    background:var(--color-primary);
+    color:#FFFFFF;
+    font-size:16px;
+    font-weight:500;
+  }
+  .btn-submit:active{opacity:0.85;}
+
+  /* ---------- Bottom sheet ---------- */
+  .mask{
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,0.45);
+    display:none;
+    align-items:flex-end;
+    justify-content:center;
+    z-index:100;
+  }
+  .mask.show{display:flex;}
+  .sheet{
+    width:100%;
+    background:#FFFFFF;
+    border-radius:16px 16px 0 0;
+    padding:18px 16px calc(18px + env(safe-area-inset-bottom));
+    max-height:60vh;
+    overflow-y:auto;
+    animation:slideUp .25s ease-out;
+  }
+  @keyframes slideUp{
+    from{transform:translateY(100%);}
+    to{transform:translateY(0);}
+  }
+  .sheet.sheet-flush{
+    padding:0;
+    max-height:none;
+    overflow-y:visible;
+  }
+  .sheet-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:8px;
+  }
+  .sheet-title{font-size:16px;font-weight:600;}
+  .sheet-close{
+    width:28px;height:28px;
+    display:flex;align-items:center;justify-content:center;
+    color:var(--color-text-sub);
+    font-size:20px;
+  }
+  .sheet-header-cta{
+    display:grid;
+    grid-template-columns:1fr auto 1fr;
+    align-items:center;
+  }
+  .sheet-header-cta .sheet-title{
+    text-align:center;
+  }
+  .sheet-cancel{
+    font-size:15px;
+    color:var(--color-text-sub);
+    justify-self:start;
+  }
+  .sheet-confirm{
+    font-size:15px;
+    font-weight:600;
+    color:var(--color-primary);
+    justify-self:end;
+  }
+  .option-item{
+    padding:14px 4px;
+    font-size:15px;
+    border-bottom:1px solid var(--color-border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .option-item:last-child{border-bottom:none;}
+  .option-item .check{
+    width:18px;height:18px;
+    border-radius:50%;
+    border:1.5px solid #D9D9D9;
+  }
+  .option-item.selected .check{
+    border-color:var(--color-primary);
+    background:var(--color-primary);
+    position:relative;
+  }
+  .option-item.selected .check::after{
+    content:"";
+    position:absolute;
+    left:5px;top:2px;
+    width:5px;height:9px;
+    border:solid #fff;
+    border-width:0 2px 2px 0;
+    transform:rotate(45deg);
+  }
+  .option-item.selected{color:var(--color-primary);}
+
+  /* ---------- Remark area ---------- */
+  .remark-row{
+    padding:14px 16px;
+    border-bottom:1px solid var(--color-border);
+  }
+  .remark-row .row-label{
+    display:block;
+    margin-bottom:10px;
+  }
+  .remark-input{
+    width:100%;
+    height:80px;
+    border:1px solid var(--color-border);
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:14px;
+    color:var(--color-text-main);
+    background:#FAFAFA;
+    resize:none;
+    font-family:inherit;
+  }
+  .remark-input::placeholder{color:var(--color-text-sub);}
+
+  /* ---------- Picker group (van-picker-group style) ---------- */
+  .picker-group{
+    background:#FFFFFF;
+  }
+  .picker-toolbar{
+    display:grid;
+    grid-template-columns:1fr auto 1fr;
+    align-items:center;
+    height:48px;
+    padding:0 16px;
+  }
+  .picker-cancel{
+    font-size:14px;
+    color:var(--color-text-sub);
+    justify-self:start;
+  }
+  .picker-title{
+    font-size:16px;
+    font-weight:600;
+    color:var(--color-text-main);
+    text-align:center;
+  }
+  .picker-next{
+    font-size:14px;
+    font-weight:600;
+    color:var(--color-primary);
+    justify-self:end;
+  }
+  .picker-tabs{
+    display:flex;
+    border-bottom:1px solid var(--color-border);
+  }
+  .picker-tab{
+    flex:1;
+    text-align:center;
+    font-size:14px;
+    color:var(--color-text-sub);
+    padding:10px 0;
+    position:relative;
+  }
+  .picker-tab.active{
+    color:var(--color-text-main);
+    font-weight:600;
+  }
+  .picker-tab.active::after{
+    content:"";
+    position:absolute;
+    left:50%;
+    bottom:0;
+    transform:translateX(-50%);
+    width:20px;
+    height:3px;
+    border-radius:2px;
+    background:var(--color-primary);
+  }
+  .picker-panel{
+    display:none;
+    position:relative;
+  }
+  .picker-panel.active{display:block;}
+  .wheel-columns{
+    display:flex;
+    height:252px;
+  }
+  .wheel-col{
+    flex:1;
+    height:252px;
+    overflow-y:scroll;
+    scroll-snap-type:y mandatory;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .wheel-col::-webkit-scrollbar{display:none;}
+  .wheel-item{
+    height:36px;
+    line-height:36px;
+    text-align:center;
+    font-size:16px;
+    color:var(--color-text-sub);
+    scroll-snap-align:center;
+  }
+  .wheel-item.spacer{visibility:hidden;}
+  .wheel-item.picked{
+    color:var(--color-text-main);
+    font-weight:600;
+  }
+  .wheel-selection{
+    position:absolute;
+    left:0;right:0;
+    top:108px;
+    height:36px;
+    border-top:1px solid var(--color-border);
+    border-bottom:1px solid var(--color-border);
+    pointer-events:none;
+  }
+  .wheel-mask-top, .wheel-mask-bottom{
+    position:absolute;
+    left:0;right:0;
+    height:108px;
+    pointer-events:none;
+    z-index:1;
+  }
+  .wheel-mask-top{
+    top:0;
+    background:linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(255,255,255,0));
+  }
+  .wheel-mask-bottom{
+    bottom:0;
+    background:linear-gradient(to top, rgba(255,255,255,0.9), rgba(255,255,255,0));
+  }
+</style>
+</head>
+<body>
+<div class="page">
+<div class="scroll-area">
+
+  <!-- Header -->
+  <div class="navbar">
+    <a class="back" href="回访记录.html">
+      <svg viewBox="0 0 11 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10 1L1.5 9L10 17" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+    <div class="title">新建回访记录</div>
+  </div>
+
+  <!-- Form -->
+  <div class="form-list">
+
+    <div class="form-row" id="shopRow">
+      <span class="row-label">合作门店</span>
+      <span class="row-value" id="shopValue">
+        <span id="shopValueText">请选择</span>
+        <span class="chevron">&rsaquo;</span>
+      </span>
+    </div>
+
+    <div class="form-row" id="typeRow">
+      <span class="row-label">回访类型</span>
+      <span class="row-value" id="typeValue">
+        <span id="typeValueText">请选择</span>
+        <span class="chevron">&rsaquo;</span>
+      </span>
+    </div>
+
+    <div class="form-row" id="resultRow">
+      <span class="row-label">回访结果</span>
+      <span class="row-value" id="resultValue">
+        <span id="resultValueText">请选择</span>
+        <span class="chevron">&rsaquo;</span>
+      </span>
+    </div>
+
+    <div class="form-row" id="datetimeRow">
+      <span class="row-label">回访时间</span>
+      <span class="row-value" id="datetimeValue">
+        <span id="datetimeValueText">请选择</span>
+        <span class="chevron">&rsaquo;</span>
+      </span>
+    </div>
+
+    <div class="upload-row" id="uploadRow">
+      <div class="upload-row-top">
+        <span class="row-label">回访截图</span>
+      </div>
+      <div class="upload-grid" id="uploadGrid">
+        <label class="upload-box">
+          <span class="plus">+</span>
+          <span>上传截图</span>
+          <input type="file" class="file-input" id="fileInput" accept="image/*" multiple>
+        </label>
+      </div>
+    </div>
+
+    <div class="remark-row">
+      <span class="row-label">备注说明</span>
+      <textarea class="remark-input" placeholder="请输入回访备注内容（选填）"></textarea>
+    </div>
+
+  </div>
+
+  <div class="submit-wrap">
+    <button class="btn-submit" id="submitBtn">提交</button>
+  </div>
+
+</div>
+
+<!-- Shop picker sheet -->
+<div class="mask" id="shopMask">
+  <div class="sheet">
+    <div class="sheet-header sheet-header-cta">
+      <span class="sheet-cancel" id="cancelShopBtn">取消</span>
+      <span class="sheet-title">选择门店</span>
+      <span class="sheet-confirm" id="confirmShopBtn">确认</span>
+    </div>
+    <div id="shopList">
+      <div class="option-item" data-name="佟源记炸肉(乌海万达店)"><span>佟源记炸肉(乌海万达店)</span><span class="check"></span></div>
+      <div class="option-item" data-name="佟源记炸肉(寿光全福元店)"><span>佟源记炸肉(寿光全福元店)</span><span class="check"></span></div>
+      <div class="option-item" data-name="佟源记炸肉(青岛凯德广场店)"><span>佟源记炸肉(青岛凯德广场店)</span><span class="check"></span></div>
+      <div class="option-item" data-name="佟源记炸肉(西三旗万象汇黑金店)"><span>佟源记炸肉(西三旗万象汇黑金店)</span><span class="check"></span></div>
+      <div class="option-item" data-name="佟源记炸肉(东一商场店)"><span>佟源记炸肉(东一商场店)</span><span class="check"></span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Type picker sheet -->
+<div class="mask" id="typeMask">
+  <div class="sheet">
+    <div class="sheet-header sheet-header-cta">
+      <span class="sheet-cancel" id="cancelTypeBtn">取消</span>
+      <span class="sheet-title">选择回访类型</span>
+      <span class="sheet-confirm" id="confirmTypeBtn">确认</span>
+    </div>
+    <div id="typeList">
+      <div class="option-item" data-name="微信回访"><span>微信回访</span><span class="check"></span></div>
+      <div class="option-item" data-name="电话回访"><span>电话回访</span><span class="check"></span></div>
+    </div>
+  </div>
+</div>
+
+<!-- Date-time picker sheet (van-picker-group style) -->
+<div class="mask" id="datetimeMask">
+  <div class="sheet sheet-flush">
+    <div class="picker-group">
+      <div class="picker-toolbar">
+        <span class="picker-cancel" id="pgCancel">取消</span>
+        <span class="picker-title">回访时间</span>
+        <span class="picker-next" id="pgNext">下一步</span>
+      </div>
+      <div class="picker-tabs">
+        <div class="picker-tab active" id="tabDate" data-tab="date">选择日期</div>
+        <div class="picker-tab" id="tabTime" data-tab="time">选择时间</div>
+      </div>
+      <div class="picker-body">
+        <div class="picker-panel active" data-panel="date">
+          <div class="wheel-mask-top"></div>
+          <div class="wheel-mask-bottom"></div>
+          <div class="wheel-selection"></div>
+          <div class="wheel-columns">
+            <div class="wheel-col" id="colYear"></div>
+            <div class="wheel-col" id="colMonth"></div>
+            <div class="wheel-col" id="colDay"></div>
+          </div>
+        </div>
+        <div class="picker-panel" data-panel="time">
+          <div class="wheel-mask-top"></div>
+          <div class="wheel-mask-bottom"></div>
+          <div class="wheel-selection"></div>
+          <div class="wheel-columns">
+            <div class="wheel-col" id="colHour"></div>
+            <div class="wheel-col" id="colMinute"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Result picker sheet -->
+<div class="mask" id="resultMask">
+  <div class="sheet">
+    <div class="sheet-header sheet-header-cta">
+      <span class="sheet-cancel" id="cancelResultBtn">取消</span>
+      <span class="sheet-title">选择回访结果</span>
+      <span class="sheet-confirm" id="confirmResultBtn">确认</span>
+    </div>
+    <div id="resultList">
+      <div class="option-item" data-name="满意"><span>满意</span><span class="check"></span></div>
+      <div class="option-item" data-name="反馈意见"><span>反馈意见</span><span class="check"></span></div>
+      <div class="option-item" data-name="不满意"><span>不满意</span><span class="check"></span></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+  // ---- Shop picker ----
+  var shopMask = document.getElementById('shopMask');
+  var shopRow = document.getElementById('shopRow');
+  var shopValue = document.getElementById('shopValue');
+  var shopValueText = document.getElementById('shopValueText');
+
+  shopRow.addEventListener('click', function(){
+    shopMask.classList.add('show');
+  });
+  document.getElementById('cancelShopBtn').addEventListener('click', function(){
+    shopMask.classList.remove('show');
+  });
+  shopMask.addEventListener('click', function(e){
+    if (e.target === shopMask) shopMask.classList.remove('show');
+  });
+  document.querySelectorAll('#shopList .option-item').forEach(function(opt){
+    opt.addEventListener('click', function(){
+      document.querySelectorAll('#shopList .option-item').forEach(function(o){o.classList.remove('selected');});
+      opt.classList.add('selected');
+    });
+  });
+  document.getElementById('confirmShopBtn').addEventListener('click', function(){
+    var selected = document.querySelector('#shopList .option-item.selected');
+    if (selected) {
+      shopValueText.textContent = selected.getAttribute('data-name');
+      shopValue.classList.add('filled');
+    }
+    shopMask.classList.remove('show');
+  });
+
+  // ---- Type picker ----
+  var typeMask = document.getElementById('typeMask');
+  var typeRow = document.getElementById('typeRow');
+  var typeValue = document.getElementById('typeValue');
+  var typeValueText = document.getElementById('typeValueText');
+  var uploadRow = document.getElementById('uploadRow');
+
+  typeRow.addEventListener('click', function(){
+    typeMask.classList.add('show');
+  });
+  document.getElementById('cancelTypeBtn').addEventListener('click', function(){
+    typeMask.classList.remove('show');
+  });
+  typeMask.addEventListener('click', function(e){
+    if (e.target === typeMask) typeMask.classList.remove('show');
+  });
+  document.querySelectorAll('#typeList .option-item').forEach(function(opt){
+    opt.addEventListener('click', function(){
+      document.querySelectorAll('#typeList .option-item').forEach(function(o){o.classList.remove('selected');});
+      opt.classList.add('selected');
+    });
+  });
+  document.getElementById('confirmTypeBtn').addEventListener('click', function(){
+    var selected = document.querySelector('#typeList .option-item.selected');
+    if (selected) {
+      var name = selected.getAttribute('data-name');
+      typeValueText.textContent = name;
+      typeValue.classList.add('filled');
+      uploadRow.style.display = (name === '电话回访') ? 'none' : '';
+    }
+    typeMask.classList.remove('show');
+  });
+
+  // ---- Date-time picker (van-picker-group style wheel picker) ----
+  var datetimeMask = document.getElementById('datetimeMask');
+  var datetimeRow = document.getElementById('datetimeRow');
+  var datetimeValue = document.getElementById('datetimeValue');
+  var datetimeValueText = document.getElementById('datetimeValueText');
+  var pgNext = document.getElementById('pgNext');
+  var tabDate = document.getElementById('tabDate');
+  var tabTime = document.getElementById('tabTime');
+  var panelDate = document.querySelector('.picker-panel[data-panel="date"]');
+  var panelTime = document.querySelector('.picker-panel[data-panel="time"]');
+
+  var ITEM_H = 36;
+  var SPACER = 3;
+  var now = new Date();
+  var picked = {
+    year: now.getFullYear(),
+    month: now.getMonth() + 1,
+    day: now.getDate(),
+    hour: now.getHours(),
+    minute: now.getMinutes()
+  };
+
+  function pad2(n){ return n < 10 ? '0' + n : '' + n; }
+
+  function daysInMonth(year, month){
+    return new Date(year, month, 0).getDate();
+  }
+
+  function buildColumn(col, values, labels, selectedIndex, onPick){
+    col.innerHTML = '';
+    for (var s = 0; s < SPACER; s++){
+      var top = document.createElement('div');
+      top.className = 'wheel-item spacer';
+      col.appendChild(top);
+    }
+    values.forEach(function(v, i){
+      var item = document.createElement('div');
+      item.className = 'wheel-item';
+      item.textContent = labels[i];
+      item.dataset.value = v;
+      col.appendChild(item);
+    });
+    for (var e = 0; e < SPACER; e++){
+      var bottom = document.createElement('div');
+      bottom.className = 'wheel-item spacer';
+      col.appendChild(bottom);
+    }
+    col.scrollTop = selectedIndex * ITEM_H;
+    markPicked(col, selectedIndex);
+
+    var scrollTimer = null;
+    col.onscroll = function(){
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(function(){
+        var idx = Math.round(col.scrollTop / ITEM_H);
+        idx = Math.max(0, Math.min(values.length - 1, idx));
+        col.scrollTop = idx * ITEM_H;
+        markPicked(col, idx);
+        onPick(values[idx]);
+      }, 120);
+    };
+  }
+
+  function markPicked(col, idx){
+    col.querySelectorAll('.wheel-item').forEach(function(item){
+      item.classList.remove('picked');
+    });
+    var real = col.children[idx + SPACER];
+    if (real) real.classList.add('picked');
+  }
+
+  function renderDateColumns(){
+    var years = [], yearLabels = [];
+    var maxYear = 2026;
+    for (var y = maxYear - 2; y <= maxYear; y++){
+      years.push(y); yearLabels.push(y + '年');
+    }
+    if (picked.year > maxYear) picked.year = maxYear;
+    var months = [], monthLabels = [];
+    for (var m = 1; m <= 12; m++){ months.push(m); monthLabels.push(pad2(m) + '月'); }
+
+    var dCount = daysInMonth(picked.year, picked.month);
+    if (picked.day > dCount) picked.day = dCount;
+    var days = [], dayLabels = [];
+    for (var d = 1; d <= dCount; d++){ days.push(d); dayLabels.push(pad2(d) + '日'); }
+
+    buildColumn(document.getElementById('colYear'), years, yearLabels, years.indexOf(picked.year), function(v){
+      picked.year = v;
+      renderDateColumns();
+    });
+    buildColumn(document.getElementById('colMonth'), months, monthLabels, months.indexOf(picked.month), function(v){
+      picked.month = v;
+      renderDateColumns();
+    });
+    buildColumn(document.getElementById('colDay'), days, dayLabels, days.indexOf(picked.day), function(v){
+      picked.day = v;
+    });
+  }
+
+  function renderTimeColumns(){
+    var hours = [], hourLabels = [];
+    for (var h = 0; h <= 23; h++){ hours.push(h); hourLabels.push(pad2(h) + '时'); }
+    var minutes = [], minuteLabels = [];
+    for (var mi = 0; mi <= 59; mi++){ minutes.push(mi); minuteLabels.push(pad2(mi) + '分'); }
+
+    buildColumn(document.getElementById('colHour'), hours, hourLabels, hours.indexOf(picked.hour), function(v){
+      picked.hour = v;
+    });
+    buildColumn(document.getElementById('colMinute'), minutes, minuteLabels, minutes.indexOf(picked.minute), function(v){
+      picked.minute = v;
+    });
+  }
+
+  function switchTab(tab){
+    if (tab === 'date'){
+      tabDate.classList.add('active');
+      tabTime.classList.remove('active');
+      panelDate.classList.add('active');
+      panelTime.classList.remove('active');
+      pgNext.textContent = '下一步';
+    } else {
+      tabTime.classList.add('active');
+      tabDate.classList.remove('active');
+      panelTime.classList.add('active');
+      panelDate.classList.remove('active');
+      pgNext.textContent = '确认';
+    }
+  }
+
+  datetimeRow.addEventListener('click', function(){
+    datetimeMask.classList.add('show');
+    switchTab('date');
+    renderDateColumns();
+    renderTimeColumns();
+  });
+  document.getElementById('pgCancel').addEventListener('click', function(){
+    datetimeMask.classList.remove('show');
+  });
+  datetimeMask.addEventListener('click', function(e){
+    if (e.target === datetimeMask) datetimeMask.classList.remove('show');
+  });
+  tabDate.addEventListener('click', function(){ switchTab('date'); });
+  tabTime.addEventListener('click', function(){ switchTab('time'); });
+  pgNext.addEventListener('click', function(){
+    if (panelDate.classList.contains('active')){
+      switchTab('time');
+    } else {
+      datetimeValueText.textContent = picked.year + '-' + pad2(picked.month) + '-' + pad2(picked.day) + ' ' + pad2(picked.hour) + ':' + pad2(picked.minute);
+      datetimeValue.classList.add('filled');
+      datetimeMask.classList.remove('show');
+    }
+  });
+
+  // ---- Result picker ----
+  var resultMask = document.getElementById('resultMask');
+  var resultRow = document.getElementById('resultRow');
+  var resultValue = document.getElementById('resultValue');
+  var resultValueText = document.getElementById('resultValueText');
+
+  resultRow.addEventListener('click', function(){
+    resultMask.classList.add('show');
+  });
+  document.getElementById('cancelResultBtn').addEventListener('click', function(){
+    resultMask.classList.remove('show');
+  });
+  resultMask.addEventListener('click', function(e){
+    if (e.target === resultMask) resultMask.classList.remove('show');
+  });
+  document.querySelectorAll('#resultList .option-item').forEach(function(opt){
+    opt.addEventListener('click', function(){
+      document.querySelectorAll('#resultList .option-item').forEach(function(o){o.classList.remove('selected');});
+      opt.classList.add('selected');
+    });
+  });
+  document.getElementById('confirmResultBtn').addEventListener('click', function(){
+    var selected = document.querySelector('#resultList .option-item.selected');
+    if (selected) {
+      resultValueText.textContent = selected.getAttribute('data-name');
+      resultValue.classList.add('filled');
+    }
+    resultMask.classList.remove('show');
+  });
+
+  // ---- Upload screenshots ----
+  var uploadGrid = document.getElementById('uploadGrid');
+  var fileInput = document.getElementById('fileInput');
+  fileInput.addEventListener('change', function(e){
+    var files = Array.prototype.slice.call(e.target.files);
+    files.forEach(function(file){
+      var reader = new FileReader();
+      reader.onload = function(ev){
+        var thumb = document.createElement('div');
+        thumb.className = 'thumb';
+        thumb.innerHTML = '<img src="' + ev.target.result + '"><div class="remove">&times;</div>';
+        thumb.querySelector('.remove').addEventListener('click', function(){
+          thumb.remove();
+        });
+        uploadGrid.insertBefore(thumb, uploadGrid.lastElementChild);
+      };
+      reader.readAsDataURL(file);
+    });
+    fileInput.value = '';
+  });
+
+  // ---- Submit ----
+  document.getElementById('submitBtn').addEventListener('click', function(){
+    window.location.href = '回访记录.html';
+  });
+</script>
+</body>
+</html>
